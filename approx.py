@@ -58,23 +58,39 @@ def eval_sol(graph,terms,sol):
 
 # compute an approximate solution to the steiner problem
 def approx_steiner(graph,terms):
+    res = []    
     Gt = nx.complete_graph(terms)
+    
+    #calcul de tout les plus court chemins
+    path = dict(nx.all_pairs_shortest_path(graph))
+    
+    #pour chaque combinaison de 2 noeuds
     for (i,j) in it.combinations(terms,2):
-            print(i,j)
-            sp = nx.shortest_path(graph,i,j);
-            print(sp);
-            Gt.edges[i, j]['weight'] = sp[1];
-    res=[]
+        #on met le poids au plus court chemin dans Gt
+        Gt.edges[i, j]['weight'] = path[i][j][0]
+
+
+    #arbre couvrant minimum de Gt        
+    A = list(nx.minimum_spanning_tree(Gt).edges(data=True))
+    
+    for i in range(len(A)):
+        pair = (A[i][0], A[i][1])    
+        res.append(pair)
+    print(res)
+    
     print_graph(Gt,terms)
-    return res
+    
+    return res 
 
 
 
 # class used to read a steinlib instance
 class MySteinlibInstance(SteinlibInstance):
 
-    my_graph = nx.Graph()
-    terms = []
+    def __init__(self):
+        self.my_graph = nx.Graph()
+        self.terms = []
+
 
     def terminals__t(self, line, converted_token):
         self.terms.append(converted_token[0])
@@ -96,7 +112,7 @@ if __name__ == "__main__":
         graph = my_class.my_graph
         print_graph(graph,terms)
         sol=approx_steiner(graph,terms)
-        #print_graph(graph,terms,sol)
-        #print(eval_sol(graph,terms,sol))
+        print_graph(graph,terms,sol)
+        print(eval_sol(graph,terms,sol))
 
 
