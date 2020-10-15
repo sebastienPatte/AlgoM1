@@ -23,7 +23,7 @@ def print_graph(graph,terms=None,sol=None):
     if (not (terms is None)):
         nx.draw_networkx_nodes(graph,pos, nodelist=terms, node_color='r')
     if (not (sol is None)):
-        nx.draw_networkx_edges(graph,pos, edgelist=sol, edge_color='r')
+        nx.draw_networkx_edges(graph,pos, edgelist=sol, edge_color='b')
     plt.show()
     
     return
@@ -89,6 +89,7 @@ def approx_steiner(graph,terms):
 
 def init(graph):
     Es = []
+    print(nx.edges(graph))
     for i in range(len(nx.edges(graph))):
         Es.append(rdm.randint(0, 1))
     return Es
@@ -107,7 +108,42 @@ def neighbor(sol,graph):
     #         Es[i] = 1 - Es[i]
     
 def eval(sol, graph, terms):
+    #arretes du graphe
+    edges = list(nx.edges(graph))
+    #arretes du sous graphe
+    edgesSub = []
+    #on selectionne les arretes à 1 dans 'sol'
+    for i in range(len(edges)):
+        if(sol[i]):
+            edgesSub.append(edges[i])
     
+    #sous graphe à partir des arretes selectionees 
+    subGraph = nx.edge_subgraph(graph,edgesSub)
+    #somme des poids de ce sous-graphe
+    sumW = subGraph.size(weight="weight")
+    
+    print_graph(graph,terms,edgesSub)
+    print_graph(subGraph, terms)
+    
+    #nombre de termes non-reliés
+    nbTermsNR = 0
+    
+    
+    for t1 in terms:
+        flag = False
+        for t2 in terms:
+            #si t1 et t2 sont connectés
+            print("voisins (",t1,",",t2,") : ",t1 in (nx.all_neighbors(subGraph,t2)))
+            if (t1 in set(nx.all_neighbors(subGraph,t2))):
+                #t1 est connecté à un autre terminal donc on passe au terminal suivant
+                print(t1," est connecté à ",t2)
+                flag = True
+                break
+        if(not flag):
+            #t1 n'est connecte a aucun autre terminal
+            nbTermsNR+=1
+            
+    print(nbTermsNR)
     
 # class used to read a steinlib instance
 class MySteinlibInstance(SteinlibInstance):
@@ -140,8 +176,10 @@ if __name__ == "__main__":
         # print_graph(graph,terms,sol)
         # print(eval_sol(graph,terms,sol))
         
-        I = init(graph,terms)
+        I = init(graph)
+        print("terms : ",terms)
         print("initial Es : ",I)
-        print("neighbor   : ",neighbor(I, graph, terms))
+        print("neighbor   : ",neighbor(I, graph))
+        eval(I,graph,terms)
 
 
