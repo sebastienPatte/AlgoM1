@@ -2,8 +2,10 @@ import sys
 import itertools as it
 import matplotlib.pyplot as plt
 import networkx as nx
+import random as rdm
 from steinlib.instance import SteinlibInstance
 from steinlib.parser import SteinlibParser
+
 
 stein_file = "test.stp"
 
@@ -80,13 +82,33 @@ def approx_steiner(graph,terms):
             
             res.append(pair)
     
-    
     print_graph(Gt,terms)
     
     return res 
 
 
+def init(graph):
+    Es = []
+    for i in range(len(nx.edges(graph))):
+        Es.append(rdm.randint(0, 1))
+    return Es
 
+# def recuit(graph, terms, nb_iter):
+#     for i in nb_iter:
+#         newI
+        
+        
+def neighbor(sol,graph):
+    i = rdm.randint(0, len(sol)-1)
+    sol[i] = 1-sol[i]
+    return sol
+    # for i in range(len(Es)-1):
+    #     if rand < proba:
+    #         Es[i] = 1 - Es[i]
+    
+def eval(sol, graph, terms):
+    
+    
 # class used to read a steinlib instance
 class MySteinlibInstance(SteinlibInstance):
 
@@ -113,9 +135,13 @@ if __name__ == "__main__":
         my_parser.parse()
         terms = my_class.terms
         graph = my_class.my_graph
-        print_graph(graph,terms)
-        sol=approx_steiner(graph,terms)
-        print_graph(graph,terms,sol)
-        print(eval_sol(graph,terms,sol))
+        # print_graph(graph,terms)
+        # sol=approx_steiner(graph,terms)
+        # print_graph(graph,terms,sol)
+        # print(eval_sol(graph,terms,sol))
+        
+        I = init(graph,terms)
+        print("initial Es : ",I)
+        print("neighbor   : ",neighbor(I, graph, terms))
 
 
