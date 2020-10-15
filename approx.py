@@ -63,20 +63,23 @@ def approx_steiner(graph,terms):
     
     #calcul de tout les plus court chemins
     path = dict(nx.all_pairs_shortest_path(graph))
-    print(path[1])
+
     #pour chaque combinaison de 2 noeuds
     for (i,j) in it.combinations(terms,2):
         #on met le poids au plus court chemin dans Gt
-        Gt.add_edge(i,j,weight=len(path[i][j]))
+        Gt.add_edge(i,j,weight=nx.path_weight(graph,path[i][j],weight="weight"))
 
     #arbre couvrant minimum de Gt        
     A = list(nx.minimum_spanning_tree(Gt).edges(data=True))
     
     for i in range(len(A)):
-        pair = (A[i][0], A[i][1])    
-        print(pair)
-        res.append(pair)
-    print(res)
+        pcc = path[A[i][0]][A[i][1]];
+        for j in range(len(pcc)-1):
+            
+            pair = (pcc[j], pcc[j+1])    
+            
+            res.append(pair)
+    
     
     print_graph(Gt,terms)
     
