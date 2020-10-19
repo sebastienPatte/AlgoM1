@@ -107,7 +107,7 @@ def neighbor(sol,graph):
     #     if rand < proba:
     #         Es[i] = 1 - Es[i]
     
-def eval(sol, graph, terms):
+def eval_recuit(sol, graph, terms):
     #arretes du graphe
     edges = list(nx.edges(graph))
     #arretes du sous graphe
@@ -123,27 +123,35 @@ def eval(sol, graph, terms):
     sumW = subGraph.size(weight="weight")
     
     print_graph(graph,terms,edgesSub)
-    print_graph(subGraph, terms)
+    print_graph(subGraph)
     
     #nombre de termes non-reliés
     nbTermsNR = 0
     
-    
-    for t1 in terms:
-        flag = False
-        for t2 in terms:
-            #si t1 et t2 sont connectés
-            print("voisins (",t1,",",t2,") : ",t1 in (nx.all_neighbors(subGraph,t2)))
-            if (t1 in set(nx.all_neighbors(subGraph,t2))):
-                #t1 est connecté à un autre terminal donc on passe au terminal suivant
-                print(t1," est connecté à ",t2)
-                flag = True
-                break
-        if(not flag):
-            #t1 n'est connecte a aucun autre terminal
+    #termes présents dans le sous-graphe
+    sg_terms = []
+    for t in terms:
+        if(subGraph.has_node(t)):
+            sg_terms.append(t)
+        else:
+            #print(t," is not in subGraph ! ")
+            # si le noeud n'est pas dans le sous-graphe alors il n'est pas relié
             nbTermsNR+=1
             
-    print(nbTermsNR)
+    linked = False
+    for t1 in sg_terms:
+        for t2 in sg_terms:
+            if t1!=t2 and nx.has_path(subGraph,t1,t2) :
+                #print(t1,"is linked with",t2)
+                linked = True
+                break
+        
+        if not linked:
+            nbTermsNR+=1
+    
+    print(nbTermsNR,"node not linked")
+    
+    
     
 # class used to read a steinlib instance
 class MySteinlibInstance(SteinlibInstance):
@@ -180,6 +188,6 @@ if __name__ == "__main__":
         print("terms : ",terms)
         print("initial Es : ",I)
         print("neighbor   : ",neighbor(I, graph))
-        eval(I,graph,terms)
+        eval_recuit(I,graph,terms)
 
 
