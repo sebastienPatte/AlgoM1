@@ -57,6 +57,7 @@ def eval_sol(graph,terms,sol):
     return cost
 
 
+    
 
 # compute an approximate solution to the steiner problem
 def approx_steiner(graph,terms):
@@ -86,7 +87,26 @@ def approx_steiner(graph,terms):
     
     return res 
 
-
+def drawSolGraph(graph,terms, sol):
+    #arretes du graphe
+    edges = list(nx.edges(graph))
+    #arretes du sous graphe
+    edgesSub = []
+    #on selectionne les arretes à 1 dans 'sol'
+    for i in range(len(edges)):
+        if(sol[i]):
+            edgesSub.append(edges[i])
+    
+    #sous graphe à partir des arretes selectionees 
+    subGraph = nx.edge_subgraph(graph,edgesSub)
+    
+    sg_terms = []
+    for t in terms:
+        if(subGraph.has_node(t)):
+            sg_terms.append(t)
+    
+    print_graph(subGraph,sg_terms)
+    
 def init(graph):
     Es = []
     print(nx.edges(graph))
@@ -94,15 +114,13 @@ def init(graph):
         Es.append(rdm.randint(0, 1))
     return Es
 
-# def recuit(graph, terms, nb_iter):
-#     for i in nb_iter:
-#         newI
-        
+ 
         
 def neighbor(sol,graph):
     i = rdm.randint(0, len(sol)-1)
-    sol[i] = 1-sol[i]
-    return sol
+    res = sol.copy()
+    res[i] = 1-res[i]
+    return res
     # for i in range(len(Es)-1):
     #     if rand < proba:
     #         Es[i] = 1 - Es[i]
@@ -122,8 +140,8 @@ def eval_recuit(sol, graph, terms):
     #somme des poids de ce sous-graphe
     sumW = subGraph.size(weight="weight")
     
-    print_graph(graph,terms,edgesSub)
-    print_graph(subGraph)
+    #print_graph(graph,terms,edgesSub)
+    
     
     #nombre de termes non-reliés
     nbTermsNR = 0
@@ -148,10 +166,36 @@ def eval_recuit(sol, graph, terms):
         
         if not linked:
             nbTermsNR+=1
+    #print_graph(subGraph, sg_terms)
+    #print(nbTermsNR,"node not linked")
     
-    print(nbTermsNR,"node not linked")
+    Mt = 1000 
+    Mc = 100
     
+    nbCC = len(list(nx.connected_components(subGraph)))
     
+    res = sumW + Mt*nbTermsNR + Mc*(nbCC-1)
+    
+    print("NR :",nbTermsNR,"nbCC :",nbCC,"eval :",res)
+    
+    return res
+    
+def recuit(graph, terms, nb_iter):
+    I = init(graph)
+    
+    for i in range(nb_iter):
+        val_I = eval_recuit(I, graph, terms)
+        print("val : ",val_I)
+        nI = neighbor(I, graph)
+        val_nI = eval_recuit(nI, graph, terms)
+        
+        if val_I > val_nI:
+            I = nI
+            val_I = val_nI
+    
+    print("solution :",I)
+    print("val :",val_I)
+    drawSolGraph(graph,terms,I)
     
 # class used to read a steinlib instance
 class MySteinlibInstance(SteinlibInstance):
@@ -184,10 +228,11 @@ if __name__ == "__main__":
         # print_graph(graph,terms,sol)
         # print(eval_sol(graph,terms,sol))
         
-        I = init(graph)
-        print("terms : ",terms)
-        print("initial Es : ",I)
-        print("neighbor   : ",neighbor(I, graph))
-        eval_recuit(I,graph,terms)
-
+        # I = init(graph)
+        # print("terms : ",terms)
+        # print("initial Es : ",I)
+        # print("neighbor   : ",neighbor(I, graph))
+        # print("eval",eval_recuit(I,graph,terms))
+        
+        recuit(graph,terms,50)
 
