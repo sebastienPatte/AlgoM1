@@ -1,4 +1,6 @@
+import os
 import sys
+import math
 import itertools as it
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -109,9 +111,9 @@ def drawSolGraph(graph,terms, sol):
     
 def init(graph):
     Es = []
-    print(nx.edges(graph))
     for i in range(len(nx.edges(graph))):
-        Es.append(rdm.randint(0, 1))
+        Es.append(1)
+        #Es.append(rdm.randint(0, 1))
     return Es
 
  
@@ -169,33 +171,63 @@ def eval_recuit(sol, graph, terms):
     #print_graph(subGraph, sg_terms)
     #print(nbTermsNR,"node not linked")
     
-    Mt = 1000 
-    Mc = 100
+    Mt = sumW 
+    Mc = 10
     
     nbCC = len(list(nx.connected_components(subGraph)))
     
     res = sumW + Mt*nbTermsNR + Mc*(nbCC-1)
     
-    print("NR :",nbTermsNR,"nbCC :",nbCC,"eval :",res)
+    #print("sumW :",sumW,"NR :",nbTermsNR,"nbCC :",nbCC,"eval :",res)
     
     return res
     
-def recuit(graph, terms, nb_iter):
+def recuit(graph, terms, Tmin):
+    
+    # température
+    T = 10000
+    # variation de la température
+    deltaT = 0.99
     I = init(graph)
     
-    for i in range(nb_iter):
+    proba = 1
+    
+    keys = []
+    values = []
+    
+    cpt=0
+    
+    while T > Tmin:
+        
         val_I = eval_recuit(I, graph, terms)
-        print("val : ",val_I)
         nI = neighbor(I, graph)
         val_nI = eval_recuit(nI, graph, terms)
         
-        if val_I > val_nI:
+        if val_nI < val_I:
+            proba = 1
+        else:
+            proba = math.exp((-(val_nI-val_I))/T)
+        
+        print("val : ",val_I,"proba",proba)
+        
+        if rdm.random() <= proba:
+            #on met à jour I
             I = nI
-            val_I = val_nI
+            val_I = val_nI    
+            
+        # mise à jour de la température
+        T = deltaT * T
+        
+        keys.append(cpt)
+        values.append(val_I)
+        cpt+=1
+    # print("solution :",I)
+    # print("val :",val_I)
+    #drawSolGraph(graph,terms,I)
     
-    print("solution :",I)
-    print("val :",val_I)
-    drawSolGraph(graph,terms,I)
+    drawPlot(keys,values)
+    
+    return val_I
     
 # class used to read a steinlib instance
 class MySteinlibInstance(SteinlibInstance):
@@ -214,25 +246,54 @@ class MySteinlibInstance(SteinlibInstance):
         weight = converted_token[2]
         self.my_graph.add_edge(e_start,e_end,weight=weight)
 
+def drawPlot(names, values):
+    plt.plot(names, values)
 
 
 if __name__ == "__main__":
     my_class = MySteinlibInstance()
-    with open(stein_file) as my_file:
+    # print_graph(graph,terms)
+    # sol=approx_steiner(graph,terms)
+    # print_graph(graph,terms,sol)
+    # print(eval_sol(graph,terms,sol))
+        
+    directory = "./B/"
+    
+    dirList = sorted(os.listdir(directory))
+    
+    
+    names = []
+    values = []
+    
+    # for filename in dirList:
+        
+    #     filepath = directory+filename
+        
+    #     with open(filepath) as my_file:
+    #         my_parser = SteinlibParser(my_file, my_class)
+    #         my_parser.parse()
+    #         terms = my_class.terms
+    #         graph = my_class.my_graph
+        
+        
+    #     print(filename,"sumW",(graph.size(weight="weight")))
+    #     val = recuit(graph,terms,0.01)
+    #     print(val)
+    #     names.append(filename)
+    #     values.append(val)
+    
+    
+    with open("B/b01.stp") as my_file:
         my_parser = SteinlibParser(my_file, my_class)
         my_parser.parse()
         terms = my_class.terms
         graph = my_class.my_graph
-        # print_graph(graph,terms)
-        # sol=approx_steiner(graph,terms)
-        # print_graph(graph,terms,sol)
-        # print(eval_sol(graph,terms,sol))
         
-        # I = init(graph)
-        # print("terms : ",terms)
-        # print("initial Es : ",I)
-        # print("neighbor   : ",neighbor(I, graph))
-        # print("eval",eval_recuit(I,graph,terms))
         
-        recuit(graph,terms,50)
-
+        print("sumW",(graph.size(weight="weight")))
+        print(recuit(graph,terms,0.01))
+        
+        
+        
+        
+    
