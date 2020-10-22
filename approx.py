@@ -112,8 +112,8 @@ def drawSolGraph(graph,terms, sol):
 def init(graph):
     Es = []
     for i in range(len(nx.edges(graph))):
-        Es.append(1)
-        #Es.append(rdm.randint(0, 1))
+        #Es.append(1)
+        Es.append(rdm.randint(0, 1))
     return Es
 
  
@@ -172,7 +172,7 @@ def eval_recuit(sol, graph, terms):
     #print(nbTermsNR,"node not linked")
     
     Mt = sumW 
-    Mc = 10
+    Mc = 100
     
     nbCC = len(list(nx.connected_components(subGraph)))
     
@@ -185,7 +185,7 @@ def eval_recuit(sol, graph, terms):
 def recuit(graph, terms, Tmin):
     
     # température
-    T = 10000
+    T = 100000
     # variation de la température
     deltaT = 0.99
     I = init(graph)
@@ -196,6 +196,7 @@ def recuit(graph, terms, Tmin):
     values = []
     
     cpt=0
+    
     
     while T > Tmin:
         
@@ -208,7 +209,9 @@ def recuit(graph, terms, Tmin):
         else:
             proba = math.exp((-(val_nI-val_I))/T)
         
-        print("val : ",val_I,"proba",proba)
+        # if cpt == 0:
+        #     print("proba",math.exp(-((val_nI-val_I))/T))
+        #     break;
         
         if rdm.random() <= proba:
             #on met à jour I
@@ -225,8 +228,8 @@ def recuit(graph, terms, Tmin):
     # print("val :",val_I)
     #drawSolGraph(graph,terms,I)
     
-    drawPlot(keys,values)
-    
+    #drawPlot(keys,values)
+    drawSolGraph(graph, terms, I)
     return val_I
     
 # class used to read a steinlib instance
