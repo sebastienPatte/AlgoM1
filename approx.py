@@ -119,13 +119,14 @@ def init(graph):
  
         
 def neighbor(sol,graph):
-    i = rdm.randint(0, len(sol)-1)
     res = sol.copy()
-    res[i] = 1-res[i]
+    #i = rdm.randint(0, len(sol)-1)
+    # res[i] = 1-res[i]
+    
+    for i in range(len(res)-1):
+        if rdm.random() < 0.2:
+            res[i] = 1 - res[i]
     return res
-    # for i in range(len(Es)-1):
-    #     if rand < proba:
-    #         Es[i] = 1 - Es[i]
     
 def eval_recuit(sol, graph, terms):
     #arretes du graphe
@@ -171,7 +172,7 @@ def eval_recuit(sol, graph, terms):
     #print_graph(subGraph, sg_terms)
     #print(nbTermsNR,"node not linked")
     
-    Mt = sumW 
+    Mt = graph.size() + 100
     Mc = 100
     
     nbCC = len(list(nx.connected_components(subGraph)))
@@ -205,28 +206,24 @@ def recuit(graph, terms, Tmin):
         val_nI = eval_recuit(nI, graph, terms)
         
         if val_nI < val_I:
-            proba = 1
-        else:
-            proba = math.exp((-(val_nI-val_I))/T)
-        
-        # if cpt == 0:
-        #     print("proba",math.exp(-((val_nI-val_I))/T))
-        #     break;
-        
-        if rdm.random() <= proba:
-            #on met à jour I
             I = nI
             val_I = val_nI    
+        else:
+            proba = math.exp((-(val_nI-val_I))/T)
+            if  rdm.random() <= proba:
+                #on met à jour I
+                I = nI
+                val_I = val_nI    
             
         # mise à jour de la température
         T = deltaT * T
         
         keys.append(cpt)
         values.append(val_I)
+        #print(T,val_I,sep=" | ")
         cpt+=1
     # print("solution :",I)
     # print("val :",val_I)
-    #drawSolGraph(graph,terms,I)
     
     #drawPlot(keys,values)
     drawSolGraph(graph, terms, I)
@@ -286,16 +283,17 @@ if __name__ == "__main__":
     #     values.append(val)
     
     
-    with open("B/b01.stp") as my_file:
+    with open("test.stp") as my_file:
         my_parser = SteinlibParser(my_file, my_class)
         my_parser.parse()
         terms = my_class.terms
         graph = my_class.my_graph
         
         
-        print("sumW",(graph.size(weight="weight")))
-        print(recuit(graph,terms,0.01))
         
+        print("sumW",(graph.size(weight="weight")))
+        for i in range(30):
+            print(recuit(graph,terms,0.01))
         
         
         
