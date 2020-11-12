@@ -5,6 +5,7 @@ import itertools as it
 import matplotlib.pyplot as plt
 import networkx as nx
 import random as rdm
+import statistics as st
 from steinlib.instance import SteinlibInstance
 from steinlib.parser import SteinlibParser
 
@@ -82,12 +83,14 @@ def approx_steiner(graph,terms):
         for j in range(len(pcc)-1):
             
             pair = (pcc[j], pcc[j+1])    
-            
             res.append(pair)
     
     print_graph(Gt,terms)
     
     return res 
+
+
+################################################################################
 
 def drawSolGraph(graph,terms, sol):
     #arretes du graphe
@@ -116,16 +119,21 @@ def init(graph):
         Es.append(rdm.randint(0, 1))
     return Es
 
- 
+
         
 def neighbor(sol,graph):
     res = sol.copy()
-    #i = rdm.randint(0, len(sol)-1)
-    # res[i] = 1-res[i]
+    rdmI = rdm.randint(0, len(sol)-1)
+    res[rdmI] = 1-res[rdmI]
     
-    for i in range(len(res)-1):
-        if rdm.random() < 0.2:
+    for i in range(rdmI):
+        if rdm.random() < 1/len(res):
             res[i] = 1 - res[i]
+    
+    for i in range(rdmI+1, len(res)-1):
+        if rdm.random() < 1/len(res):
+            res[i] = 1 - res[i]
+            
     return res
     
 def eval_recuit(sol, graph, terms):
@@ -134,18 +142,15 @@ def eval_recuit(sol, graph, terms):
     #arretes du sous graphe
     edgesSub = []
     #on selectionne les arretes à 1 dans 'sol'
-    for i in range(len(edges)):
+    for i in range(len(edges)): 
         if(sol[i]):
             edgesSub.append(edges[i])
     
     #sous graphe à partir des arretes selectionees 
     subGraph = nx.edge_subgraph(graph,edgesSub)
+    
     #somme des poids de ce sous-graphe
     sumW = subGraph.size(weight="weight")
-    
-    #print_graph(graph,terms,edgesSub)
-    
-    
     #nombre de termes non-reliés
     nbTermsNR = 0
     
@@ -172,8 +177,8 @@ def eval_recuit(sol, graph, terms):
     #print_graph(subGraph, sg_terms)
     #print(nbTermsNR,"node not linked")
     
-    Mt = graph.size() + 100
-    Mc = 100
+    Mt = graph.size()
+    Mc = graph.size()/2
     
     nbCC = len(list(nx.connected_components(subGraph)))
     
@@ -183,13 +188,9 @@ def eval_recuit(sol, graph, terms):
     
     return res
     
-def recuit(graph, terms, Tmin):
+def recuit(graph, terms, T, Tmin, deltaT):
     
-    # température
-    T = 100000
     # variation de la température
-    deltaT = 0.99
-    I = init(graph)
     
     proba = 1
     
@@ -198,23 +199,32 @@ def recuit(graph, terms, Tmin):
     
     cpt=0
     
+    I = init(graph)
+    val_I = eval_recuit(I, graph, terms)
+    
+    #init sol minimale
+    minI = I
+    val_minI = val_I
     
     while T > Tmin:
         
-        val_I = eval_recuit(I, graph, terms)
         nI = neighbor(I, graph)
         val_nI = eval_recuit(nI, graph, terms)
         
         if val_nI < val_I:
-            I = nI
-            val_I = val_nI    
+            proba = 1
         else:
             proba = math.exp((-(val_nI-val_I))/T)
-            if  rdm.random() <= proba:
-                #on met à jour I
-                I = nI
-                val_I = val_nI    
-            
+        
+        if  rdm.random() <= proba:
+            #on met à jour I
+            I = nI
+            val_I = val_nI    
+            #on met à jour la solution min
+            if(val_I < val_minI):
+                minI = I
+                val_minI = val_I
+        
         # mise à jour de la température
         T = deltaT * T
         
@@ -226,8 +236,9 @@ def recuit(graph, terms, Tmin):
     # print("val :",val_I)
     
     #drawPlot(keys,values)
-    drawSolGraph(graph, terms, I)
-    return val_I
+    #drawSolGraph(graph, terms, I)
+    print("nbIt",cpt)
+    return val_minI
     
 # class used to read a steinlib instance
 class MySteinlibInstance(SteinlibInstance):
@@ -248,53 +259,133 @@ class MySteinlibInstance(SteinlibInstance):
 
 def drawPlot(names, values):
     plt.plot(names, values)
+    plt.show()
 
+def computeInstance(path, graph, terms, T, Tmin, deltaT):
+    names = []
+    values = []
+    f = open(path,"a")
+    
+    for i in range(100):
+        val = recuit(graph, terms, T, Tmin, deltaT)
+        values.append(val)
+        names.append(i)
+        print(path, i, val)
+        f.write((str)(val)+"\n")
+    #drawPlot(names,values)
+    f.close()
 
+def plotFromFile(path, Tinit, Tmin, deltaT):
+    
+    # récupération des données
+    
+    f = open(path,"r")
+    cpt=0
+    names = []
+    values = []
+    for l in f:
+        names.append(cpt)
+        val = (float)(l)
+        values.append(val)
+        cpt+=1
+    f.close()
+
+    ecart_type = st.stdev(values)
+    moy = st.mean(values)
+    
+    #choix de l'intervalle de confiance
+    intervale = ecart_type
+    
+    # courbe principale
+    plt.plot(names,values)
+    
+    # Moyenne
+    plt.plot([0,100], [moy,moy], '--', color='green')
+    plt.text(101,moy,str(round(moy, 2)), color='green')
+    
+    # intervalle de confiance
+    uBound = str(round(moy+intervale, 2))
+    dBound = str(round(moy-intervale, 2))
+    plt.plot([0,100],[moy+intervale,moy+intervale], '--', color='red')
+    plt.plot([0,100],[moy-intervale,moy-intervale], '--', color='red')
+    plt.text(101, moy+intervale, uBound, color='red')
+    plt.text(101, moy-intervale, dBound, color='red')
+    
+    # plt.text(0,moy-intervale-4,"$-\sigma$")
+    
+    
+    # légendes et titre
+    plt.xlabel('number of runs')
+    plt.ylabel('solution evaluation')
+
+    # plt.legend(['courbe des résultats', 'moyenne', 'intervalle de confiance ($\sigma$)'], bbox_to_anchor=(1,1), loc='upper left')
+    
+    plt.title("Estimations avec $T_{init}="+ str(Tinit) +"$ $T_{min}="+ str(Tmin) +"$ et $\Delta_{T}="+ str(deltaT) +"$")
+
+    # plt.text(0.92,0.61,"Points dans l'intervalle \nde confiance :"+str(inInter)+" %", transform=plt.gcf().transFigure)
+    # plt.text(0.92,0.49,"$\sigma =$"+str(intervale), transform=plt.gcf().transFigure)
+    # plt.text(0.92,0.44,"- "+str(moy-intervale), transform=plt.gcf().transFigure)
+    # plt.text(0.92,0.40,"+ "+str(moy+intervale), transform=plt.gcf().transFigure)
+    
+    plt.margins(x=0.01)
+    plt.show()
+    
+    # Prints
+    
+    inInter = 0
+    for i in values:
+        if(i>=moy-intervale and i<=moy+intervale):
+            inInter+=1
+    
+    print("écart type :", ecart_type)
+    print("moyenne:", moy)
+    print("dans l'intervale :",inInter,"%")
+    print()
+    
+    
 if __name__ == "__main__":
     my_class = MySteinlibInstance()
     # print_graph(graph,terms)
     # sol=approx_steiner(graph,terms)
     # print_graph(graph,terms,sol)
     # print(eval_sol(graph,terms,sol))
-        
-    directory = "./B/"
-    
-    dirList = sorted(os.listdir(directory))
     
     
-    names = []
-    values = []
-    
-    # for filename in dirList:
-        
-    #     filepath = directory+filename
-        
-    #     with open(filepath) as my_file:
-    #         my_parser = SteinlibParser(my_file, my_class)
-    #         my_parser.parse()
-    #         terms = my_class.terms
-    #         graph = my_class.my_graph
-        
-        
-    #     print(filename,"sumW",(graph.size(weight="weight")))
-    #     val = recuit(graph,terms,0.01)
-    #     print(val)
-    #     names.append(filename)
-    #     values.append(val)
-    
-    
-    with open("test.stp") as my_file:
+    with open("B/b05.stp") as my_file:
         my_parser = SteinlibParser(my_file, my_class)
         my_parser.parse()
         terms = my_class.terms
         graph = my_class.my_graph
         
+        # print_graph(graph,terms)
+        # sol=approx_steiner(graph,terms)
+        # print(sol)
+        # print_graph(graph,terms,sol)
+        # print(eval_sol(graph,terms,sol))
         
         
-        print("sumW",(graph.size(weight="weight")))
-        for i in range(30):
-            print(recuit(graph,terms,0.01))
+        # print("sumW",(graph.size(weight="weight")))
         
+        # recuit(graph, terms, 1000, 0.1, 0.999)
+        # computeInstance("newNeigh/450000_1_999", graph, terms, 550000, 0.1, 0.999)
+        # plotFromFile("newNeigh/450000_1_999", 550000, 0.1, 0.999)
         
+        # computeInstance("newNeigh/455_11_999", graph, terms, 455, 0.11, 0.999)
+        # plotFromFile("newNeigh/455_1_999", 455, 0.1, 0.999)
+     
+        # plotFromFile("newNeigh/100000_1_999", 100000, 0.1, 0.999)
+        # plotFromFile("newNeigh/10000_1_997", 10000, 0.1, 0.997)
+        # plotFromFile("newNeigh/10000_1_998", 10000, 0.1, 0.998)
+        # plotFromFile("newNeigh/10000_1_999", 10000, 0.1, 0.999)
+        # plotFromFile("newNeigh/1000_1_999", 1000, 0.1, 0.999)
+        # plotFromFile("newNeigh/454_1_999", 454, 0.1, 0.999)
+        # plotFromFile("newNeigh/455_1_999", 455, 0.1, 0.999)
+        # plotFromFile("newNeigh/456_1_999", 456, 0.1, 0.999)
         
-    
+        # computeInstance("b02/10000_1_999", graph, terms, 10000, 0.1, 0.999)
+        # plotFromFile("b02/10000_1_999", 10000, 0.1, 0.999)
+        
+        computeInstance("b05/455_1_999", graph, terms, 455, 0.1, 0.999)
+        plotFromFile("b05/455_1_999", 455, 0.1, 0.999)
+     
+        
