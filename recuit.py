@@ -198,55 +198,98 @@ def drawPlot(names, values):
 
 
 def computeInstance(path, graph, terms, T, Tmin, deltaT):
+    
+    NB_POINTS = 15
+    
     keys = []
     values = []
     interMin = []
     interMax = []
     
+    # on construit le nom du fichier en fonction des paramètres
     strTmin = str(Tmin).split('.')[1]
     strDeltaT = str(deltaT).split('.')[1]
-    
     path += "/"+str(T)+"_"+strTmin+"_"+strDeltaT
     print(path)
     # f = open(path,"a")
     
     #remplissage keys et values avec la 1ère éxécution
     k, v, r = recuit(graph, terms, T, Tmin, deltaT)
-    for i in k:
-        keys.append(k[i])
-        values.append(v[i])
-        # initialisation intervalle de confiance
-        interMin.append(v[i])
-        interMax.append(v[i])
+    
+    
+    #on récupère 10 points parmis ceux explorés
+    for i in range(1,NB_POINTS):
+        id = i*round(len(k)/NB_POINTS)
+        keys.append(k[id])
+        
+    keys.append(k[len(k)-1])
+    
+    
+    # on initialise values avec les valeurs de la 1ère exécution
+    cpt = 0
+    old_xPt = 0 
+    #on parcoure les 10 points sur l'axe x qui ont été choisis (xPt)
+    for xPt in keys:
+        vals = 0
+        #pour chaque xPt on parcoure les valeurs entre lui et l'ancien point (old_xPt)
+        for j in range(old_xPt, xPt):
+            
+            if(j==old_xPt):
+                # initialisation intervalle de confiance
+                interMin.append(v[j])
+                interMax.append(v[j])
+            else:
+                #maj intervalle de confiance
+                if(v[j] < interMin[cpt]):
+                    interMin[cpt] = v[j]
+                if(v[j] > interMax[cpt]):
+                    interMax[cpt] = v[j]
+                
+            vals+= v[j]
+        
+        # moyenne des valeurs entre old_xPt et xPt
+        vals = vals / (xPt-old_xPt)
+        values.append(vals)
+        
+        #maj interMin/Max pour avoir une position relative a vals et non absolue
+        interMax[cpt] = interMax[cpt] - vals
+        interMin[cpt] = vals - interMin[cpt]
+        
+        
+        old_xPt = xPt
+        cpt+=1
+    
     print("1 | val :",r)
     
     #on ajoute les valeurs des autres éxécutions dans values
-    for i in range(100):
-        # k : keys from recuit
-        # v : values from recuit
-        # r : result from recuit
-        k, v, r = recuit(graph, terms, T, Tmin, deltaT)
-        print(i+2, "| val :",r)    
-        # parcours des valeurs explorées par recuit
-        for j in keys:
-            values[j] += v[j] 
-            #maj val_min de l'intervalle
-            if(v[j] < interMin[j]):
-                interMin[j] = v[j]
-            #maj val_max de l'intervalle
-            if(v[j] > interMax[j]):
-                interMax[j] = v[j]
+    # for i in range(100):
+    #     # k : keys from recuit
+    #     # v : values from recuit
+    #     # r : result from recuit
+    #     k, v, r = recuit(graph, terms, T, Tmin, deltaT)
+    #     print(i+2, "| val :",r)    
+    #     # parcours des valeurs explorées par recuit
+    #     for j in keys:
+    #         values[j] += v[j] 
+    #         #maj val_min de l'intervalle
+    #         if(v[j] < interMin[j]):
+    #             interMin[j] = v[j]
+    #         #maj val_max de l'intervalle
+    #         if(v[j] > interMax[j]):
+    #             interMax[j] = v[j]
                     
     #calul des moyennes de valeurs
-    for i in range(len(values)):
-        values[i] = values[i] / 100
+    # for i in range(len(values)):
+    #     values[i] = values[i] / 100
     
     
     # f.write((str)(val)+"\n")
     # f.close()
     
-    # plt.errorbar(keys, values, yerr=[interMin, interMax])
+    
     plt.plot(keys, values)
+    plt.errorbar(keys, values, yerr=[interMin, interMax], fmt='none') #capsize=5
+    
     plt.show()
     
 
@@ -360,7 +403,7 @@ if __name__ == "__main__":
         # computeInstance("b02/10000_1_999", graph, terms, 10000, 0.1, 0.999)
         # plotFromFile("b02/10000_1_999", 10000, 0.1, 0.999)
         
-        # computeInstance("b02/4550_01_999", graph, terms, 4550, 0.01, 0.999)
+        # computeInstance("new_b02", graph, terms, 4550, 0.01, 0.999)
         # plotFromFile("b02/4550_01_999", 4550, 0.01, 0.999)
      
         computeInstance("test", graph, terms, 1000, 0.1, 0.99)
