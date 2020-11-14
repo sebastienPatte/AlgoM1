@@ -208,7 +208,6 @@ def computeInstance(graph, terms, Tinit, Tmin, deltaT, path=None):
     interMin = []
     interMax = []
     
-    skip = False    
     # on construit le nom du fichier en fonction des paramètres
     if (not (path is None)):
         
@@ -226,29 +225,63 @@ def computeInstance(graph, terms, Tinit, Tmin, deltaT, path=None):
         
         # test si le fichier n'existe pas déjà 
         if os.path.isfile(path):
-            print("ComputeInstance : le fichier "+path+" existe déjà (skipping)")
-            skip = True
+            raise NameError("ComputeInstance : le fichier "+path+" existe déjà")
         # ouverture fichier
-        if(not skip):
-            f = open(path,"a")
+        f = open(path,"a")
     
-    #si le fichier existe déjà alors on ne fait rien
-    if(not skip):
-        #remplissage keys et values avec la 1ère éxécution
+    #remplissage keys et values avec la 1ère éxécution
+    # k : keys from recuit
+    # v : values from recuit
+    # s : solution
+    k, v, s = recuit(graph, terms, Tinit, Tmin, deltaT)
+    
+    
+    #on récupère 10 points parmis ceux explorés
+    for i in range(1,NB_POINTS):
+        id = i*round(len(k)/NB_POINTS)
+        keys.append(k[id])
+        
+    keys.append(k[len(k)-1])
+    
+    
+    # on initialise values avec les valeurs de la 1ère exécution
+    cpt = 0
+    old_xPt = 0 
+    #on parcoure les 10 points sur l'axe x qui ont été choisis (xPt)
+    for xPt in keys:
+        vals = 0
+        #pour chaque xPt on parcoure les valeurs entre lui et l'ancien point (old_xPt)
+        for j in range(old_xPt, xPt):
+            
+            if(j==old_xPt):
+                # initialisation intervalle de confiance
+                interMin.append(v[j])
+                interMax.append(v[j])
+            else:
+                #maj intervalle de confiance
+                if(v[j] < interMin[cpt]):
+                    interMin[cpt] = v[j]
+                if(v[j] > interMax[cpt]):
+                    interMax[cpt] = v[j]
+                
+            vals+= v[j]
+        
+        # moyenne des valeurs entre old_xPt et xPt
+        vals = vals / (xPt-old_xPt)
+        values.append(vals)
+        #maj old_xPt et cpt
+        old_xPt = xPt
+        cpt+=1
+    
+    print("1 | val :",v[len(v)-1])
+    
+    # on ajoute les valeurs des autres éxécutions dans values
+    for i in range(99):
         # k : keys from recuit
         # v : values from recuit
         # s : solution
         k, v, s = recuit(graph, terms, Tinit, Tmin, deltaT)
-        
-        
-        #on récupère 10 points parmis ceux explorés
-        for i in range(1,NB_POINTS):
-            id = i*round(len(k)/NB_POINTS)
-            keys.append(k[id])
-            
-        keys.append(k[len(k)-1])
-        
-        
+        print(i+2, "| val :",v[len(v)-1])    
         # on initialise values avec les valeurs de la 1ère exécution
         cpt = 0
         old_xPt = 0 
@@ -257,83 +290,45 @@ def computeInstance(graph, terms, Tinit, Tmin, deltaT, path=None):
             vals = 0
             #pour chaque xPt on parcoure les valeurs entre lui et l'ancien point (old_xPt)
             for j in range(old_xPt, xPt):
-                
-                if(j==old_xPt):
-                    # initialisation intervalle de confiance
-                    interMin.append(v[j])
-                    interMax.append(v[j])
-                else:
-                    #maj intervalle de confiance
-                    if(v[j] < interMin[cpt]):
-                        interMin[cpt] = v[j]
-                    if(v[j] > interMax[cpt]):
-                        interMax[cpt] = v[j]
-                    
-                vals+= v[j]
             
+                #maj intervalle de confiance
+                if(v[j] < interMin[cpt]):
+                    interMin[cpt] = v[j]
+                if(v[j] > interMax[cpt]):
+                    interMax[cpt] = v[j]
+                
+                vals+= v[j]
+        
             # moyenne des valeurs entre old_xPt et xPt
             vals = vals / (xPt-old_xPt)
-            values.append(vals)
+            # on ajoute la valeur moyennée pour cette courbe à celles des autre courbes
+            values[cpt] += (vals)
             #maj old_xPt et cpt
             old_xPt = xPt
             cpt+=1
-        
-        print("1 | val :",v[len(v)-1])
-        
-        # on ajoute les valeurs des autres éxécutions dans values
-        for i in range(99):
-            # k : keys from recuit
-            # v : values from recuit
-            # s : solution
-            k, v, s = recuit(graph, terms, Tinit, Tmin, deltaT)
-            print(i+2, "| val :",v[len(v)-1])    
-            # on initialise values avec les valeurs de la 1ère exécution
-            cpt = 0
-            old_xPt = 0 
-            #on parcoure les 10 points sur l'axe x qui ont été choisis (xPt)
-            for xPt in keys:
-                vals = 0
-                #pour chaque xPt on parcoure les valeurs entre lui et l'ancien point (old_xPt)
-                for j in range(old_xPt, xPt):
-                
-                    #maj intervalle de confiance
-                    if(v[j] < interMin[cpt]):
-                        interMin[cpt] = v[j]
-                    if(v[j] > interMax[cpt]):
-                        interMax[cpt] = v[j]
-                    
-                    vals+= v[j]
-            
-                # moyenne des valeurs entre old_xPt et xPt
-                vals = vals / (xPt-old_xPt)
-                # on ajoute la valeur moyennée pour cette courbe à celles des autre courbes
-                values[cpt] += (vals)
-                #maj old_xPt et cpt
-                old_xPt = xPt
-                cpt+=1
     
     
-        for cpt in range(len(values)):
-            # moyenne sur les 100 courbes
-            values[cpt] = values[cpt] / 100
-            #maj interMin/Max pour avoir une position relative a values et non absolue
-            interMax[cpt] = interMax[cpt] - values[cpt]
-            interMin[cpt] = values[cpt] - interMin[cpt]
-            # on enregistre les données calculées ligne par ligne (key val interMin interMax)
-            if (not (path is None)):
-                f.write(str(keys[cpt])+" "+str(values[cpt])+" "+str(interMin[cpt])+" "+str(interMax[cpt])+"\n")
-        
-        #fermeture fichier de données
+    for cpt in range(len(values)):
+        # moyenne sur les 100 courbes
+        values[cpt] = values[cpt] / 100
+        #maj interMin/Max pour avoir une position relative a values et non absolue
+        interMax[cpt] = interMax[cpt] - values[cpt]
+        interMin[cpt] = values[cpt] - interMin[cpt]
+        # on enregistre les données calculées ligne par ligne (key val interMin interMax)
         if (not (path is None)):
-            f.close()
-        #dessin de la courbe avec les errorbars
-        plt.plot(keys, values)
-        plt.errorbar(keys, values, yerr=[interMin, interMax], fmt='none') #capsize=5
-        # plt.show()
+            f.write(str(keys[cpt])+" "+str(values[cpt])+" "+str(interMin[cpt])+" "+str(interMax[cpt])+"\n")
+    
+    #fermeture fichier de données
+    if (not (path is None)):
+        f.close()
+    #dessin de la courbe avec les errorbars
+    plt.plot(keys, values)
+    plt.errorbar(keys, values, yerr=[interMin, interMax], fmt='none') #capsize=5
+    # plt.show()
     
 
 def plotFromFile(Tinit, Tmin, deltaT, path):
-    folder_name = path
+    
     strTmin = str(Tmin).split('.')[1]
     strDeltaT = str(deltaT).split('.')[1]
     path ="runs/"+path+"/"+str(Tinit)+"_"+strTmin+"_"+strDeltaT
@@ -371,9 +366,9 @@ def plotFromFile(Tinit, Tmin, deltaT, path):
     plt.errorbar(keys, values, yerr=[interMin, interMax], fmt='none', color='red') #capsize=5
     
     # légendes et titre
-    plt.xlabel("nombre d'itérations")
-    plt.ylabel("évaluation moyenne (sur 100 runs)")
-    plt.title("Estimations "+folder_name+" avec $T_{init}="+ str(Tinit) +"$ $T_{min}="+ str(Tmin) +"$ et $\lambda_{T}="+ str(deltaT) +"$")
+    plt.xlabel('number of iterations')
+    plt.ylabel('average solution evaluation')
+    plt.title("Estimations avec $T_{init}="+ str(Tinit) +"$ $T_{min}="+ str(Tmin) +"$ et $\Delta_{T}="+ str(deltaT) +"$")
 
     #affichage des valeurs de la dernière itération
     iEnd = len(keys)-1
@@ -410,8 +405,7 @@ if __name__ == "__main__":
     # print(eval_sol(graph,terms,sol))
     
     
-    with open("B/b03.stp") as my_file:
-        folder = "b03"
+    with open("B/b01.stp") as my_file:
         my_parser = SteinlibParser(my_file, my_class)
         my_parser.parse()
         terms = my_class.terms
@@ -419,16 +413,14 @@ if __name__ == "__main__":
         
         # print("sumW",(graph.size(weight="weight")))
         
+        folder = "b01"
         
+        computeInstance(graph, terms, 10000, 0.01, 0.999, folder)
+        plotFromFile(10000, 0.01, 0.999, folder)
         
-        for i in range(1,10):
-            Tinit = 14500 + i*100
-            computeInstance(graph, terms, Tinit, 0.1, 0.99, folder)
-            plotFromFile(Tinit, 0.1, 0.99, folder)
+        computeInstance(graph, terms, 13000, 0.01, 0.999, folder)
+        plotFromFile(13000, 0.01, 0.999, folder)
         
-        # computeInstance(graph, terms, 15500, 0.1, 0.99, folder)
-        # plotFromFile(15500, 0.1, 0.99, folder)
-        
-        # computeInstance(graph, terms, 17000, 0.1, 0.99, folder)
-        # plotFromFile(17000, 0.1, 0.99, folder)
+        computeInstance(graph, terms, 15000, 0.01, 0.999, folder)
+        plotFromFile(15000, 0.01, 0.999, folder)
         
