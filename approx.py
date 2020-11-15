@@ -133,11 +133,6 @@ class MySteinlibInstance(SteinlibInstance):
     
 if __name__ == "__main__":
     my_class = MySteinlibInstance()
-    # print_graph(graph,terms)
-    # sol=approx_steiner(graph,terms)
-    # print_graph(graph,terms,sol)
-    # print(eval_sol(graph,terms,sol))
-    
     
     with open("B/b08.stp") as my_file:
         my_parser = SteinlibParser(my_file, my_class)
@@ -150,5 +145,4 @@ if __name__ == "__main__":
         print(sol)
         print_graph(graph,terms,sol)
         print(eval_sol(graph,terms,sol))
-        
-        
+    

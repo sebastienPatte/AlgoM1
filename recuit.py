@@ -307,9 +307,9 @@ def computeInstance(graph, terms, Tinit, Tmin, deltaT, path=None):
                 
         
         #dessin de la courbe avec les errorbars
-        plt.plot(keys, mean_values)
-        plt.errorbar(keys, mean_values, yerr=[interMin, interMax], fmt='none') #capsize=5
-        plt.show()
+        # plt.plot(keys, mean_values)
+        # plt.errorbar(keys, mean_values, yerr=[interMin, interMax], fmt='none') #capsize=5
+        # plt.show()
     
 
 def plotFromFile(Tinit, Tmin, deltaT, path):
@@ -317,7 +317,7 @@ def plotFromFile(Tinit, Tmin, deltaT, path):
     strTmin = str(Tmin).split('.')[1]
     strDeltaT = str(deltaT).split('.')[1]
     path ="runs/"+path+"/"+str(Tinit)+"_"+strTmin+"_"+strDeltaT
-    print(path)
+    # print(path)
     # test si le fichier existe 
     if not os.path.isfile(path):
         raise NameError("plotFromFile : le fichier "+path+" n'existe pas")
@@ -381,35 +381,19 @@ def plotFromFile(Tinit, Tmin, deltaT, path):
 
     # dessin
     plt.show()
-    
+    print(Tinit,values[len(values)-1])
     
 if __name__ == "__main__":
     my_class = MySteinlibInstance()
-    # print_graph(graph,terms)
-    # sol=approx_steiner(graph,terms)
-    # print_graph(graph,terms,sol)
-    # print(eval_sol(graph,terms,sol))
     
-    
-    with open("test.stp") as my_file:
-        folder = "test"
+    with open("B/b03.stp") as my_file:
+        folder = "b03"
         my_parser = SteinlibParser(my_file, my_class)
         my_parser.parse()
         terms = my_class.terms
         graph = my_class.my_graph
         
-        # print("sumW",(graph.size(weight="weight")))
         
-        # computeInstance(graph, terms, 1000, 0.1, 0.99, folder)
-        plotFromFile(1000, 0.1, 0.99, folder)
-        # for i in range(1,10):
-        #     Tinit = 14500 + i*100
-        #     computeInstance(graph, terms, Tinit, 0.1, 0.99, folder)
-        #     plotFromFile(Tinit, 0.1, 0.99, folder)
-        
-        # computeInstance(graph, terms, 15500, 0.1, 0.99, folder)
-        # plotFromFile(15500, 0.1, 0.99, folder)
-        
-        # computeInstance(graph, terms, 17000, 0.1, 0.99, folder)
-        # plotFromFile(17000, 0.1, 0.99, folder)
+        computeInstance(graph, terms, 14800, 0.1, 0.998, folder)
+        plotFromFile(14800, 0.1, 0.998, folder)
         
