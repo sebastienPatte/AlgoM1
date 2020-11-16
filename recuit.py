@@ -304,13 +304,7 @@ def computeInstance(graph, terms, Tinit, Tmin, deltaT, path=None):
         # #fermeture fichier de données
         if (not (path is None)):
             f.close()
-                
-        
-        #dessin de la courbe avec les errorbars
-        # plt.plot(keys, mean_values)
-        # plt.errorbar(keys, mean_values, yerr=[interMin, interMax], fmt='none') #capsize=5
-        # plt.show()
-    
+            
 
 def plotFromFile(Tinit, Tmin, deltaT, path):
     folder_name = path
@@ -386,14 +380,14 @@ def plotFromFile(Tinit, Tmin, deltaT, path):
 if __name__ == "__main__":
     my_class = MySteinlibInstance()
     
-    with open("B/b03.stp") as my_file:
-        folder = "b03"
+    with open("B/b07.stp") as my_file:
+        folder = "b07"
         my_parser = SteinlibParser(my_file, my_class)
         my_parser.parse()
         terms = my_class.terms
         graph = my_class.my_graph
         
         
-        computeInstance(graph, terms, 14800, 0.1, 0.998, folder)
-        plotFromFile(14800, 0.1, 0.998, folder)
+        computeInstance(graph, terms, 14800, 0.1, 0.999, folder)
+        plotFromFile(14800, 0.1, 0.999, folder)
         
